@@ -18,6 +18,8 @@ import org.jetbrains.kotlin.serialization.js.ModuleKind
 private const val Nullable = "Nullable"
 private const val objects = "_objects_"
 private const val syntheticObjectNameSeparator = '$'
+private const val magicPropertyName = "__doNotUseOrImplementIt"
+private const val doNotImplementIt = "__doNotImplementIt"
 
 fun ExportedModule.toTypeScript(): String {
     return ExportModelToTsDeclarations().generateTypeScript(name, this)
@@ -335,6 +337,46 @@ class ExportModelToTsDeclarations {
         )
 
         return ExportedProperty(name = name, type = type, mutable = false, isMember = true)
+    }
+
+    private fun ExportedRegularClass.shouldContainImplementationOfMagicProperty(): Boolean {
+        return !ir.isExternal && superInterfaces.any { it is ExportedType.ClassType && !it.ir.isExternal }
+    }
+
+    fun ExportedClass.generateTagType(): ExportedType {
+        return ExportedType.InlineInterfaceType(
+            listOf(
+                ExportedProperty(
+                    name,
+                    ExportedType.Primitive.UniqueSymbol,
+                    mutable = false,
+                    isMember = true,
+                    isStatic = false,
+                    isAbstract = false,
+                    isProtected = false,
+                    isField = true,
+                    irGetter = null,
+                    irSetter = null,
+                )
+            )
+        )
+    }
+
+    fun List<ExportedDeclaration>.withMagicInterfaceProperty(klass: ExportedClass): List<ExportedDeclaration> {
+        return plus(
+            ExportedProperty(
+                magicPropertyName,
+                klass.generateTagType(),
+                mutable = false,
+                isMember = true,
+                isStatic = false,
+                isAbstract = false,
+                isProtected = false,
+                isField = false,
+                irGetter = null,
+                irSetter = null
+            )
+        )
     }
 
     private fun ExportedParameter.toTypeScript(indent: String): String {
