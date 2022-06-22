@@ -6,17 +6,11 @@
 package org.jetbrains.kotlin.ir.backend.js.export
 
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.utils.getFqNameWithJsNameWhenAvailable
 import org.jetbrains.kotlin.ir.backend.js.utils.getJsNameOrKotlinName
 import org.jetbrains.kotlin.ir.backend.js.utils.sanitizeName
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.util.isObject
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.classifierOrNull
-import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
-import org.jetbrains.kotlin.ir.util.isInterface
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.js.common.isValidES5Identifier
 import org.jetbrains.kotlin.serialization.js.ModuleKind
@@ -24,8 +18,6 @@ import org.jetbrains.kotlin.serialization.js.ModuleKind
 private const val Nullable = "Nullable"
 private const val objects = "_objects_"
 private const val syntheticObjectNameSeparator = '$'
-private const val magicPropertyName = "__doNotUseOrImplementIt"
-private const val doNotImplementIt = "__doNotImplementIt"
 
 fun ExportedModule.toTypeScript(): String {
     return ExportModelToTsDeclarations().generateTypeScript(name, this)
@@ -343,46 +335,6 @@ class ExportModelToTsDeclarations {
         )
 
         return ExportedProperty(name = name, type = type, mutable = false, isMember = true)
-    }
-
-    private fun ExportedRegularClass.shouldContainImplementationOfMagicProperty(): Boolean {
-        return !ir.isExternal && superInterfaces.any { it is ExportedType.ClassType && !it.ir.isExternal }
-    }
-
-    fun ExportedClass.generateTagType(): ExportedType {
-        return ExportedType.InlineInterfaceType(
-            listOf(
-                ExportedProperty(
-                    name,
-                    ExportedType.Primitive.UniqueSymbol,
-                    mutable = false,
-                    isMember = true,
-                    isStatic = false,
-                    isAbstract = false,
-                    isProtected = false,
-                    isField = true,
-                    irGetter = null,
-                    irSetter = null,
-                )
-            )
-        )
-    }
-
-    fun List<ExportedDeclaration>.withMagicInterfaceProperty(klass: ExportedClass): List<ExportedDeclaration> {
-        return plus(
-            ExportedProperty(
-                magicPropertyName,
-                klass.generateTagType(),
-                mutable = false,
-                isMember = true,
-                isStatic = false,
-                isAbstract = false,
-                isProtected = false,
-                isField = false,
-                irGetter = null,
-                irSetter = null
-            )
-        )
     }
 
     private fun ExportedParameter.toTypeScript(indent: String): String {
