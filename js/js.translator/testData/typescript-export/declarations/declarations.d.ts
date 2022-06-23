@@ -5,6 +5,7 @@ declare namespace JS_TESTS {
         let _var: number;
         const _valCustomWithField: number;
         let _varCustomWithField: number;
+        const fifth: (foo.Third & foo.IA)/* foo.Fifth */;
         function sum(x: number, y: number): number;
         function varargInt(x: Int32Array): number;
         function varargNullableInt(x: Array<Nullable<number>>): number;
@@ -15,7 +16,7 @@ declare namespace JS_TESTS {
         function generic1<T>(x: T): T;
         function generic2<T>(x: Nullable<T>): boolean;
         function genericWithConstraint<T extends string>(x: T): T;
-        function genericWithMultipleConstraints<T extends foo.TestInterface & Error>(x: T): T;
+        function genericWithMultipleConstraints<T extends unknown/* kotlin.Comparable<T> */ & foo.TestInterface & Error>(x: T): T;
         function generic3<A, B, C, D, E>(a: A, b: B, c: C, d: D): Nullable<E>;
         function inlineFun(x: number, callback: (p0: number) => void): void;
         const _const_val: number;
@@ -238,6 +239,23 @@ declare namespace JS_TESTS {
             constructor(test: T);
             get test(): T;
         }
+        interface IA {
+            readonly __doNotUseOrImplementIt: {
+                readonly "foo.IA": unique symbol;
+            };
+        }
+        class Third extends /* foo.Second */ foo.First {
+            constructor();
+        }
+        class Sixth extends /* foo.Fifth */ foo.Third implements foo.IA/*, foo.IC */ {
+            constructor();
+            readonly __doNotUseOrImplementIt: foo.IA["__doNotUseOrImplementIt"];
+        }
+        class First {
+            constructor();
+        }
+        function acceptForthLike<T extends (foo.Third & foo.IA)/* foo.Forth */>(forth: T): void;
+        function acceptMoreGenericForthLike<T extends foo.IA/* foo.IB */ & foo.IA/* foo.IC */ & foo.First/* foo.Second */>(forth: T): void;
     }
     namespace _objects_ {
         const foo$Parent$Nested1: {

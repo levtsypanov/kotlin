@@ -298,3 +298,34 @@ fun createNested3(): Parent.Nested1.Nested2.Companion.Nested3 {
 
 @JsExport
 class GenericClassWithConstraint<T: TestInterface>(val test: T)
+// Save hierarhy
+
+@JsExport
+interface IA
+
+interface IB : IA
+
+interface IC : IB
+
+@JsExport
+open class Third: Second()
+
+open class Forth: Third(), IB, IC
+
+open class Fifth: Forth()
+
+@JsExport
+class Sixth: Fifth(), IC
+@JsExport
+open class First
+
+open class Second: First()
+
+@JsExport
+fun <T : Forth> acceptForthLike(forth: T) {}
+
+@JsExport
+fun <T> acceptMoreGenericForthLike(forth: T) where T: IB, T: IC, T: Second {}
+
+@JsExport
+val fifth = Fifth()
