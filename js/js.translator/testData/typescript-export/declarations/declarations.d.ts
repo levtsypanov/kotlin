@@ -5,7 +5,7 @@ declare namespace JS_TESTS {
         let _var: number;
         const _valCustomWithField: number;
         let _varCustomWithField: number;
-        const fifth: (foo.Third & foo.IA)/* foo.Fifth */;
+        const fifth: (foo.Third<boolean> & foo.IA)/* foo.Fifth<boolean> */;
         function sum(x: number, y: number): number;
         function varargInt(x: Int32Array): number;
         function varargNullableInt(x: Array<Nullable<number>>): number;
@@ -244,17 +244,17 @@ declare namespace JS_TESTS {
                 readonly "foo.IA": unique symbol;
             };
         }
-        class Third extends /* foo.Second */ foo.First {
+        class Third<T> extends /* foo.Second */ foo.First {
             constructor();
         }
-        class Sixth extends /* foo.Fifth */ foo.Third implements foo.IA/*, foo.IC */ {
+        class Sixth extends /* foo.Fifth<number> */ foo.Third<number> implements foo.IA/*, foo.IC */ {
             constructor();
             readonly __doNotUseOrImplementIt: foo.IA["__doNotUseOrImplementIt"];
         }
         class First {
             constructor();
         }
-        function acceptForthLike<T extends (foo.Third & foo.IA)/* foo.Forth */>(forth: T): void;
+        function acceptForthLike<T extends (foo.Third<string> & foo.IA)/* foo.Forth<string> */>(forth: T): void;
         function acceptMoreGenericForthLike<T extends foo.IA/* foo.IB */ & foo.IA/* foo.IC */ & foo.First/* foo.Second */>(forth: T): void;
     }
     namespace _objects_ {

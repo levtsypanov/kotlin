@@ -8,27 +8,78 @@ package org.jetbrains.kotlin.ir.backend.js.export
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.lower.isBuiltInClass
 import org.jetbrains.kotlin.ir.backend.js.lower.isStdLibClass
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrNull
-import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.superTypes
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.types.*
+import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+
+private typealias SubstitutionMap = Map<IrTypeParameterSymbol, IrTypeArgument>
 
 class TransitiveExportCollector(val context: JsIrBackendContext) {
-    private val classesCache = hashMapOf<IrClassSymbol, Set<IrType>>()
+    private val typesCaches = hashMapOf<ClassWithAppliedArguments, Set<IrType>>()
 
-    fun collectSuperTransitiveHierarchyFor(classSymbol: IrClassSymbol): Set<IrType> {
-        return classesCache.getOrPut(classSymbol) { classSymbol.collectSuperTransitiveHierarchy() }
+    fun collectSuperTransitiveHierarchyFor(type: IrSimpleType): Set<IrType> {
+        return (type.classifier as? IrClassSymbol)?.let { type.collectSuperTransitiveHierarchyFor(it, type.arguments) } ?: emptySet()
     }
 
-    private fun IrClassSymbol.collectSuperTransitiveHierarchy(): Set<IrType> =
+    private fun IrSimpleType.collectSuperTransitiveHierarchyFor(classSymbol: IrClassSymbol, typeArguments: List<IrTypeArgument>): Set<IrType> {
+        return typesCaches.getOrPut(ClassWithAppliedArguments(classSymbol, typeArguments)) { collectSuperTransitiveHierarchy(emptyMap()) }
+    }
+
+    private fun IrSimpleType.collectSuperTransitiveHierarchy(typeSubstitutionMap: SubstitutionMap): Set<IrType> {
+        return (classifier as? IrClassSymbol)?.collectSuperTransitiveHierarchy(calculateTypeSubstitutionMap(typeSubstitutionMap))
+            ?: emptySet()
+    }
+
+    private fun IrClassSymbol.collectSuperTransitiveHierarchy(typeSubstitutionMap: SubstitutionMap): Set<IrType> =
         superTypes()
-            .flatMap { (it.classifierOrNull as? IrClassSymbol)?.collectTransitiveHierarchy() ?: emptyList() }
+            .flatMap { (it as? IrSimpleType)?.collectTransitiveHierarchy(typeSubstitutionMap) ?: emptyList() }
             .toSet()
 
-    private fun IrClassSymbol.collectTransitiveHierarchy(): Set<IrType> = when {
-        isBuiltInClass(owner) || isStdLibClass(owner) -> emptySet()
-        owner.isExported(context) -> setOf(defaultType)
-        else -> collectSuperTransitiveHierarchy()
+    private fun IrSimpleType.collectTransitiveHierarchy(typeSubstitutionMap: SubstitutionMap): Set<IrType> {
+        val owner = classifier.owner as? IrClass ?: return emptySet()
+        return when {
+            isBuiltInClass(owner) || isStdLibClass(owner) -> emptySet()
+            owner.isExported(context) -> setOf(getSubstitutionFrom(typeSubstitutionMap) as IrType)
+            else -> collectSuperTransitiveHierarchy(typeSubstitutionMap)
+        }
     }
+
+    private fun IrSimpleType.calculateTypeSubstitutionMap(typeSubstitutionMap: SubstitutionMap): SubstitutionMap {
+        val classifier = this.classifier as? IrClassSymbol ?: error("Unexpected classifier $classifier for collecting transitive hierarchy")
+
+        return typeSubstitutionMap + classifier.owner.typeParameters.zip(arguments).associate {
+            it.first.symbol to it.second.getSubstitution(typeSubstitutionMap)
+        }
+    }
+
+    private fun IrType.getSubstitutionFrom(typeSubstitutionMap: SubstitutionMap): IrTypeArgument {
+        if (this !is IrSimpleType) return this as IrTypeArgument
+
+        val classifier = when (val classifier = this.classifier) {
+            is IrClassSymbol -> classifier
+            is IrTypeParameterSymbol -> return typeSubstitutionMap[classifier] ?: this
+            else -> return this
+        }
+
+        if (classifier.owner.typeParameters.isEmpty()) return this
+
+        return IrSimpleTypeImpl(
+            classifier,
+            nullability,
+            arguments.map { it.getSubstitution(typeSubstitutionMap) },
+            this.annotations
+        )
+    }
+
+    private fun IrTypeArgument.getSubstitution(typeSubstitutionMap: SubstitutionMap): IrTypeArgument {
+        return when (this) {
+            is IrType -> getSubstitutionFrom(typeSubstitutionMap)
+            is IrTypeProjection -> type.getSubstitutionFrom(typeSubstitutionMap)
+            else -> this
+        }
+    }
+
+    private data class ClassWithAppliedArguments(val classSymbol: IrClassSymbol, val appliedArguments: List<IrTypeArgument>)
 }

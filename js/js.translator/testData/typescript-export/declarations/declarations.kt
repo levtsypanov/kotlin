@@ -308,24 +308,24 @@ interface IB : IA
 interface IC : IB
 
 @JsExport
-open class Third: Second()
+open class Third<T>: Second()
 
-open class Forth: Third(), IB, IC
+open class Forth<A>: Third<A>(), IB, IC
 
-open class Fifth: Forth()
+open class Fifth<B>: Forth<B>()
 
 @JsExport
-class Sixth: Fifth(), IC
+class Sixth: Fifth<Int>(), IC
 @JsExport
 open class First
 
 open class Second: First()
 
 @JsExport
-fun <T : Forth> acceptForthLike(forth: T) {}
+fun <T : Forth<String>> acceptForthLike(forth: T) {}
 
 @JsExport
 fun <T> acceptMoreGenericForthLike(forth: T) where T: IB, T: IC, T: Second {}
 
 @JsExport
-val fifth = Fifth()
+val fifth = Fifth<Boolean>()
