@@ -420,7 +420,7 @@ class ExportModelGenerator(val context: JsIrBackendContext, val generateNamespac
     }
 
     private fun IrSimpleType.collectSuperTransitiveHierarchy(): Set<IrType> =
-        transitiveExportCollector.collectSuperTransitiveHierarchyFor(this)
+        transitiveExportCollector.collectSuperTypesTransitiveHierarchyFor(this)
 
     private fun exportAsEnumMember(
         candidate: IrDeclarationWithName,
