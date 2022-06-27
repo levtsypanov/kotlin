@@ -37,10 +37,11 @@ class TransitiveExportCollector(val context: JsIrBackendContext) {
 
     private fun IrSimpleType.collectTransitiveHierarchy(typeSubstitutionMap: SubstitutionMap): Set<IrType> {
         val owner = classifier.owner as? IrClass ?: return emptySet()
+        val substitutionMap = calculateTypeSubstitutionMap(typeSubstitutionMap)
         return when {
             isBuiltInClass(owner) || isStdLibClass(owner) -> emptySet()
-            owner.isExported(context) -> setOf(getTypeAppliedToRightTypeArguments(typeSubstitutionMap) as IrType)
-            else -> collectSuperTypesTransitiveHierarchy(typeSubstitutionMap)
+            owner.isExported(context) -> setOf(getTypeAppliedToRightTypeArguments(substitutionMap) as IrType)
+            else -> collectSuperTypesTransitiveHierarchy(substitutionMap)
         }
     }
 
