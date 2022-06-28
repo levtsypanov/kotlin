@@ -339,7 +339,7 @@ class ExportModelGenerator(val context: JsIrBackendContext, val generateNamespac
     }
 
     private fun MutableList<ExportedDeclaration>.addMagicPropertyForInterfaceImplementation(klass: IrClass, superTypes: Iterable<IrType>) {
-        val superTypesToInheritanceMagicProperty = superTypes.filter { it.shouldAddMagicPropertyOfSuper(context) }
+        val superTypesToInheritanceMagicProperty = superTypes.filter { it.shouldAddMagicPropertyOfSuper() }
 
         if (superTypesToInheritanceMagicProperty.isEmpty()) return
 
