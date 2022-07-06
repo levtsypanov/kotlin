@@ -42,6 +42,22 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
     }
 
     @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/classesInExportedFile")
+    @TestDataPath("$PROJECT_ROOT")
+    public class ClassesInExportedFile {
+        @Test
+        public void testAllFilesPresentInClassesInExportedFile() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/classesInExportedFile"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("inner-class.kt")
+        public void testInner_class() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/classesInExportedFile/inner-class.kt");
+        }
+    }
+
+    @Nested
     @TestMetadata("js/js.translator/testData/typescript-export/constructors")
     @TestDataPath("$PROJECT_ROOT")
     public class Constructors {
@@ -54,6 +70,22 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
         @TestMetadata("constructors.kt")
         public void testConstructors() throws Exception {
             runTest("js/js.translator/testData/typescript-export/constructors/constructors.kt");
+        }
+    }
+
+    @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/constructorsInExportedFile")
+    @TestDataPath("$PROJECT_ROOT")
+    public class ConstructorsInExportedFile {
+        @Test
+        public void testAllFilesPresentInConstructorsInExportedFile() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/constructorsInExportedFile"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("constructors.kt")
+        public void testConstructors() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/constructorsInExportedFile/constructors.kt");
         }
     }
 
@@ -74,6 +106,22 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
     }
 
     @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/declarationsInExportedFile")
+    @TestDataPath("$PROJECT_ROOT")
+    public class DeclarationsInExportedFile {
+        @Test
+        public void testAllFilesPresentInDeclarationsInExportedFile() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/declarationsInExportedFile"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("declarations.kt")
+        public void testDeclarations() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/declarationsInExportedFile/declarations.kt");
+        }
+    }
+
+    @Nested
     @TestMetadata("js/js.translator/testData/typescript-export/escapedDeclarations")
     @TestDataPath("$PROJECT_ROOT")
     public class EscapedDeclarations {
@@ -90,6 +138,22 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
     }
 
     @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/escapedDeclarationsInExportedFile")
+    @TestDataPath("$PROJECT_ROOT")
+    public class EscapedDeclarationsInExportedFile {
+        @Test
+        public void testAllFilesPresentInEscapedDeclarationsInExportedFile() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/escapedDeclarationsInExportedFile"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("escapedDeclarations.kt")
+        public void testEscapedDeclarations() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/escapedDeclarationsInExportedFile/escapedDeclarations.kt");
+        }
+    }
+
+    @Nested
     @TestMetadata("js/js.translator/testData/typescript-export/implicitExport")
     @TestDataPath("$PROJECT_ROOT")
     public class ImplicitExport {
@@ -99,9 +163,9 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
         }
 
         @Test
-        @TestMetadata("declarations.kt")
-        public void testDeclarations() throws Exception {
-            runTest("js/js.translator/testData/typescript-export/implicitExport/declarations.kt");
+        @TestMetadata("implicitDeclarations.kt")
+        public void testImplicitDeclarations() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/implicitExport/implicitDeclarations.kt");
         }
     }
 
@@ -150,6 +214,34 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
     }
 
     @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/moduleSystemsInExportedFile")
+    @TestDataPath("$PROJECT_ROOT")
+    public class ModuleSystemsInExportedFile {
+        @Test
+        public void testAllFilesPresentInModuleSystemsInExportedFile() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/moduleSystemsInExportedFile"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("commonjs.kt")
+        public void testCommonjs() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/moduleSystemsInExportedFile/commonjs.kt");
+        }
+
+        @Test
+        @TestMetadata("plain.kt")
+        public void testPlain() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/moduleSystemsInExportedFile/plain.kt");
+        }
+
+        @Test
+        @TestMetadata("umd.kt")
+        public void testUmd() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/moduleSystemsInExportedFile/umd.kt");
+        }
+    }
+
+    @Nested
     @TestMetadata("js/js.translator/testData/typescript-export/namespaces")
     @TestDataPath("$PROJECT_ROOT")
     public class Namespaces {
@@ -166,6 +258,22 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
     }
 
     @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/namespacesInExportedFile")
+    @TestDataPath("$PROJECT_ROOT")
+    public class NamespacesInExportedFile {
+        @Test
+        public void testAllFilesPresentInNamespacesInExportedFile() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/namespacesInExportedFile"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("namespaces.kt")
+        public void testNamespaces() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/namespacesInExportedFile/namespaces.kt");
+        }
+    }
+
+    @Nested
     @TestMetadata("js/js.translator/testData/typescript-export/primitives")
     @TestDataPath("$PROJECT_ROOT")
     public class Primitives {
@@ -178,6 +286,22 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
         @TestMetadata("primitives.kt")
         public void testPrimitives() throws Exception {
             runTest("js/js.translator/testData/typescript-export/primitives/primitives.kt");
+        }
+    }
+
+    @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/primitivesInExportedFile")
+    @TestDataPath("$PROJECT_ROOT")
+    public class PrimitivesInExportedFile {
+        @Test
+        public void testAllFilesPresentInPrimitivesInExportedFile() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/primitivesInExportedFile"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("primitives.kt")
+        public void testPrimitives() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/primitivesInExportedFile/primitives.kt");
         }
     }
 
@@ -210,6 +334,22 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
         @TestMetadata("visibility.kt")
         public void testVisibility() throws Exception {
             runTest("js/js.translator/testData/typescript-export/visibility/visibility.kt");
+        }
+    }
+
+    @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/visibilityInExportedFile")
+    @TestDataPath("$PROJECT_ROOT")
+    public class VisibilityInExportedFile {
+        @Test
+        public void testAllFilesPresentInVisibilityInExportedFile() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/visibilityInExportedFile"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("visibility.kt")
+        public void testVisibility() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/visibilityInExportedFile/visibility.kt");
         }
     }
 }
