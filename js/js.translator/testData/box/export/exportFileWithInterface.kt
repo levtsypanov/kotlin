@@ -21,7 +21,7 @@ open class NotExportedClass(override var value: Int) : ExtendedI {
 }
 
 
-// FILE: not_exported.kt
+// FILE: exportes.kt
 @file:JsExport
 
 interface I : ParentI {

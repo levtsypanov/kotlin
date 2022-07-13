@@ -299,3 +299,6 @@ fun createNested2(): Parent.Nested1.Nested2 {
 fun createNested3(): Parent.Nested1.Nested2.Companion.Nested3 {
     return Parent.Nested1.Nested2.Companion.Nested3()
 }
+
+
+class GenericClassWithConstraint<T: TestInterface>(val test: T)

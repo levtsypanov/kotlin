@@ -9369,12 +9369,6 @@ public class FirJsTestGenerated extends AbstractFirJsTest {
         }
 
         @Test
-        @TestMetadata("exportedFileWithBaseClass.kt")
-        public void testExportedFileWithBaseClass() throws Exception {
-            runTest("js/js.translator/testData/box/propertyOverride/exportedFileWithBaseClass.kt");
-        }
-
-        @Test
         @TestMetadata("externalPropertyOverride.kt")
         public void testExternalPropertyOverride() throws Exception {
             runTest("js/js.translator/testData/box/propertyOverride/externalPropertyOverride.kt");
