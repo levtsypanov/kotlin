@@ -116,6 +116,12 @@ public abstract class AbstractClassBuilder implements ClassBuilder {
     @Override
     public void done() {
         getVisitor().visitSource(sourceName, debugInfo);
+        if (debugInfo != null) {
+            if (debugInfo.length() > 65535) {
+                throw new IllegalStateException("Too big SMAP: length=" + debugInfo.length());
+            }
+            getVisitor().visitAnnotation("Lkotlin/jvm/internal/SourceDebugExtension;", false).visit("value", debugInfo);
+        }
         getVisitor().visitEnd();
     }
 
