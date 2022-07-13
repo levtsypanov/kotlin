@@ -43,7 +43,7 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
                 it.valueParameters.size == 1 &&
                 it.valueParameters.single().type.isString()
     }
-    private val appendNullableStringFunction = stringBuilder.functions.single {  // StringBuilder.append(String)
+    private val appendNullableStringFunction = stringBuilder.functions.single {  // StringBuilder.append(String?)
         it.name == nameAppend &&
                 it.valueParameters.size == 1 &&
                 it.valueParameters.single().type.isNullableString()
@@ -73,14 +73,11 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
             when (symbol) {
                 appendAnyFunction.symbol -> {  // StringBuilder.append(Any?)
                     val argument = getValueArgument(0)!!
-                    val maybeStr: String? = null
-                    kotlin.text.StringBuilder().append(maybeStr)
                     if (argument.type.isNullable()) {
-                        // Transform to `StringBuilder.append(ARG?.toString())`, using "StringBuilder.append(String?)"
+                        // Transform `StringBuilder.append(Any?)` to `StringBuilder.append(ARG?.toString())`, using "StringBuilder.append(String?)"
                         buildConcatenationCall(appendNullableStringFunction, dispatchReceiver!!, argument, ::buildNullableArgToNullableString)
                     } else {
-                        // Transform to `StringBuilder.append(ARG.toString())`, using "StringBuilder.append(String)"
-                        // Note: fortunately, all "null" string structures are unified
+                        // Transform `StringBuilder.append(Any)` to `StringBuilder.append(ARG.toString())`, using "StringBuilder.append(String)"
                         buildConcatenationCall(appendStringFunction, dispatchReceiver!!, argument, ::buildNonNullableArgToString)
                     }
                 }
@@ -104,22 +101,20 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
 
     private fun IrCall.buildConcatenationCall(function: IrSimpleFunction, receiver: IrExpression, argument: IrExpression,
                                               blockBuilder: (IrCall, IrExpression) -> IrExpression) =
-            with(IrCallImpl(startOffset, endOffset, function.returnType, function.symbol, 0, 1)) {
+            IrCallImpl(startOffset, endOffset, function.returnType, function.symbol, typeArgumentsCount = 0, valueArgumentsCount = 1).apply {
                 putValueArgument(0, blockBuilder(this, argument))
                 dispatchReceiver = receiver
-                this
             }
 
-    private fun IrCall.buildEQEQ(arg0: IrExpression, arg1: IrExpression): IrExpression {
-        return IrCallImpl(startOffset, endOffset, context.irBuiltIns.booleanType, context.irBuiltIns.eqeqSymbol,
-                typeArgumentsCount = 0, valueArgumentsCount = 2, origin).apply {
-            putValueArgument(0, arg0)
-            putValueArgument(1, arg1)
-        }
-    }
+    private fun IrCall.buildEQEQ(arg0: IrExpression, arg1: IrExpression) =
+            IrCallImpl(startOffset, endOffset, context.irBuiltIns.booleanType, context.irBuiltIns.eqeqSymbol,
+                    typeArgumentsCount = 0, valueArgumentsCount = 2, origin).apply {
+                putValueArgument(0, arg0)
+                putValueArgument(1, arg1)
+            }
 
     // Builds snippet of type String
-    // - "if(argument==null) "null" else argument.toString()", if argument's type is nullable
+    // - "if(argument==null) "null" else argument.toString()", if argument's type is nullable. Note: fortunately, all "null" string structures are unified
     // - "argument.toString()", otherwise
     private fun buildNullableArgToString(irCall: IrCall, argument: IrExpression): IrExpression {
         return with(irCall) {

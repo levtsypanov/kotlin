@@ -6215,6 +6215,11 @@ fileCheckTest("filecheck_intrinsics") {
     annotatedSource = project.file('filecheck/intrinsics.kt')
 }
 
+task kt53119_side_effect(type: KonanLocalTest) {
+    useGoldenData = true
+    source = "codegen/stringConcatenationTypeNarrowing/kt53119_side_effect.kt"
+}
+
 fileCheckTest("filecheck_kt53119_plus_generated_noescape") {
     annotatedSource = project.file('filecheck/kt53119_plus_generated_noescape.kt')
     enabled = project.globalTestArgs.contains('-opt')
