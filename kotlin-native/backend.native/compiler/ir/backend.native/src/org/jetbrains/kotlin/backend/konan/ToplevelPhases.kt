@@ -279,6 +279,7 @@ internal val allLoweringsPhase = NamedCompilerPhase(
                         foldConstantLoweringPhase,
                         computeStringTrimPhase,
                         stringConcatenationPhase,
+                        stringConcatenationTypeNarrowingPhase,
                         enumConstructorsPhase,
                         initializersPhase,
                         localFunctionsPhase,
