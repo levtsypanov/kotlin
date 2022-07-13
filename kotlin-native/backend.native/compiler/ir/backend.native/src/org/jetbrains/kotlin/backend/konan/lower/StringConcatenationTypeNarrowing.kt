@@ -104,7 +104,6 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
 
     private fun IrCall.buildConcatenationCall(function: IrSimpleFunction, receiver: IrExpression, argument: IrExpression,
                                               blockBuilder: (IrCall, IrExpression) -> IrExpression) =
-            // FIXME add generic tests
             with(IrCallImpl(startOffset, endOffset, function.returnType, function.symbol, 0, 1)) {
                 putValueArgument(0, blockBuilder(this, argument))
                 dispatchReceiver = receiver
