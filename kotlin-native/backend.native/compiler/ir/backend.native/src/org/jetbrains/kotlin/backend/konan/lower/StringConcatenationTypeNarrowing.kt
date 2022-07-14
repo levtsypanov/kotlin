@@ -7,16 +7,21 @@ package org.jetbrains.kotlin.backend.konan.lower
 
 import org.jetbrains.kotlin.backend.konan.Context
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.IrBuildingTransformer
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
+import org.jetbrains.kotlin.ir.builders.createTmpVariable
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irIfThenElse
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.isTrivial
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 
@@ -120,11 +125,12 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
         return with(irCall) {
             if (argument.type.isNullable()) {
                 context.createIrBuilder(symbol).let {
+                    val argumentValue = it.createTemporaryVariableIfNecessary(argument)
                     it.irIfThenElse(
                             context.irBuiltIns.stringType,
-                            condition = buildEQEQ(argument, IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)),
+                            condition = buildEQEQ(argumentValue, IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)),
                             thenPart = IrConstImpl.string(startOffset, endOffset, context.irBuiltIns.stringType, "null"),
-                            elsePart = buildNonNullableArgToString(this, argument),
+                            elsePart = buildNonNullableArgToString(this, argumentValue),
                             origin = null
                     )
                 }
@@ -137,11 +143,12 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
     private fun buildNullableArgToNullableString(irCall: IrCall, argument: IrExpression): IrExpression {
         return with(irCall) {
             context.createIrBuilder(symbol).let {
+                val argumentValue = it.createTemporaryVariableIfNecessary(argument)
                 it.irIfThenElse(
                         context.irBuiltIns.stringType.makeNullable(),
-                        condition = buildEQEQ(argument, IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)),
+                        condition = buildEQEQ(argumentValue, IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)),
                         thenPart = IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType),
-                        elsePart = buildNonNullableArgToString(this, argument),
+                        elsePart = buildNonNullableArgToString(this, argumentValue),
                         origin = null
                 )
             }
@@ -162,4 +169,24 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
             }
         }
     }
+
+    /**
+     * If [expression] is non-trivial, this function creates a temporary local variable for that expression and returns [IrGetValue] for it.
+     * Otherwise, it returns original trivial [expression]. This helps reduce excessive unnecessary local variable usage.
+     * Inspired by lower/loops/utils/DeclarationIrBuilder.createTemporaryVariableIfNecessary
+     */
+    private fun DeclarationIrBuilder.createTemporaryVariableIfNecessary(
+            expression: IrExpression,
+            nameHint: String? = null,
+            irType: IrType? = null,
+            isMutable: Boolean = false
+    ): IrExpression =
+            if (expression.isTrivial())
+                expression
+            else {
+                val variable = scope.createTmpVariable(expression, nameHint = nameHint, irType = irType, isMutable = isMutable)
+                // FIXME add variable definition to the scope
+                irGet(variable)
+            }
+
 }
