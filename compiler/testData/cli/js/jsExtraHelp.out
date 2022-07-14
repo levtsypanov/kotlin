@@ -40,7 +40,7 @@ where advanced options include:
   -Xrepositories=<path>      Paths to additional places where libraries could be found
   -Xtyped-arrays             Translate primitive arrays to JS typed arrays
   -Xstrict-implicit-export-types
-                             Generate strict types for implicitly exported entities inside d.ts files. Available in IR backend only.X
+                             Generate strict types for implicitly exported entities inside d.ts files. Available in IR backend only.
   -Xwasm                     Use experimental WebAssembly compiler backend
   -Xwasm-debug-info          Add debug info to WebAssembly compiled module
   -Xwasm-enable-array-range-checks
