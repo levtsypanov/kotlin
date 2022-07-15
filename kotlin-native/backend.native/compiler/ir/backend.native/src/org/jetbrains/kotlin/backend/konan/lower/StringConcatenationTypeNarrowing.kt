@@ -121,7 +121,7 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
     private fun buildNullableArgToString(irCall: IrCall, argument: IrExpression): IrExpression {
         return with(irCall) {
             if (argument.type.isNullable()) {
-                context.createIrBuilder(symbol).irBlock(irCall.startOffset, irCall.endOffset) {
+                context.createIrBuilder(builder.scope.scopeOwnerSymbol).irBlock(irCall.startOffset, irCall.endOffset) {
                     val argumentValue = createTempValIfNecessary(argument)
                     +irIfThenElse(
                             context.irBuiltIns.stringType,
@@ -139,7 +139,7 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
     // "if(argument==null) null else argument.toString()", that is similar to "argument?.toString()"
     private fun buildNullableArgToNullableString(irCall: IrCall, argument: IrExpression): IrExpression {
         return with(irCall) {
-            context.createIrBuilder(symbol).irBlock(irCall.startOffset, irCall.endOffset) {
+            context.createIrBuilder(builder.scope.scopeOwnerSymbol).irBlock(irCall.startOffset, irCall.endOffset) {
                 val argumentValue = createTempValIfNecessary(argument)
                 +irIfThenElse(
                         context.irBuiltIns.stringType.makeNullable(),
