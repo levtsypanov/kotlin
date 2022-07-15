@@ -16,9 +16,12 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrGetValueImpl
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.isConstantLike
 import org.jetbrains.kotlin.ir.util.isTrivial
+import org.jetbrains.kotlin.ir.util.shallowCopy
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 
@@ -42,18 +45,15 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
 
     private val appendStringFunction = stringBuilder.functions.single {  // StringBuilder.append(String)
         it.name == nameAppend &&
-                it.valueParameters.size == 1 &&
-                it.valueParameters.single().type.isString()
+                it.valueParameters.singleOrNull()?.type?.isString() == true
     }
     private val appendNullableStringFunction = stringBuilder.functions.single {  // StringBuilder.append(String?)
         it.name == nameAppend &&
-                it.valueParameters.size == 1 &&
-                it.valueParameters.single().type.isNullableString()
+                it.valueParameters.singleOrNull()?.type?.isNullableString() == true
     }
     private val appendAnyFunction = stringBuilder.functions.single {  // StringBuilder.append(Any?)
         it.name == nameAppend &&
-                it.valueParameters.size == 1 &&
-                it.valueParameters.single().type.isNullableAny()
+                it.valueParameters.singleOrNull()?.type?.isNullableAny() == true
     }
 
     // null happens in :kotlin-native:endorsedLibraries:kotlinx.cli:macos_arm64KotlinxCliCache
@@ -64,9 +64,7 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
     }
 
     override fun lower(irFile: IrFile) {
-        if (context.shouldOptimize()) {
-            irFile.transformChildrenVoid(this)
-        }
+        irFile.transformChildrenVoid(this)
     }
 
     override fun visitCall(expression: IrCall): IrExpression {
@@ -84,33 +82,28 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
                     }
                 }
 
-                context.irBuiltIns.memberStringPlus -> {  // String.plus(Any?)
-                    if (plusImplFunction != null) {
-                        buildConcatenationCall(plusImplFunction, dispatchReceiver!!, getValueArgument(0)!!, ::buildNullableArgToString)
-                    } else expression
-                }
+                context.irBuiltIns.memberStringPlus -> plusImplFunction?.let { // String.plus(Any?)
+                    buildConcatenationCall(it, dispatchReceiver!!, getValueArgument(0)!!, ::buildNullableArgToString)
+                } ?: expression
 
-                context.irBuiltIns.extensionStringPlus -> {  // String?.plus(Any?)
-                    if (plusImplFunction != null)
-                        buildConcatenationCall(plusImplFunction, buildNullableArgToString(this, extensionReceiver!!),
-                                getValueArgument(0)!!, ::buildNullableArgToString)
-                    else expression
-                }
+                context.irBuiltIns.extensionStringPlus -> plusImplFunction?.let {   // String?.plus(Any?)
+                    buildConcatenationCall(it, buildNullableArgToString(this, extensionReceiver!!), getValueArgument(0)!!, ::buildNullableArgToString)
+                } ?: expression
+
                 else -> expression
             }
         }
     }
 
-    private fun IrCall.buildConcatenationCall(function: IrSimpleFunction, receiver: IrExpression, argument: IrExpression,
-                                              blockBuilder: (IrCall, IrExpression) -> IrExpression) =
-            IrCallImpl(startOffset, endOffset, function.returnType, function.symbol, typeArgumentsCount = 0, valueArgumentsCount = 1).apply {
+    private fun buildConcatenationCall(function: IrSimpleFunction, receiver: IrExpression, argument: IrExpression,
+                                       blockBuilder: (IrCall, IrExpression) -> IrExpression) =
+            builder.irCall(function.symbol, function.returnType, typeArgumentsCount = 0, valueArgumentsCount = 1).apply {
                 putValueArgument(0, blockBuilder(this, argument))
                 dispatchReceiver = receiver
             }
 
-    private fun IrCall.buildEQEQ(arg0: IrExpression, arg1: IrExpression) =
-            IrCallImpl(startOffset, endOffset, context.irBuiltIns.booleanType, context.irBuiltIns.eqeqSymbol,
-                    typeArgumentsCount = 0, valueArgumentsCount = 2, origin).apply {
+    private fun buildEQEQ(arg0: IrExpression, arg1: IrExpression) =
+            builder.irCall(context.irBuiltIns.eqeqSymbol, context.irBuiltIns.booleanType, typeArgumentsCount = 0, valueArgumentsCount = 2).apply {
                 putValueArgument(0, arg0)
                 putValueArgument(1, arg1)
             }
@@ -121,13 +114,13 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
     private fun buildNullableArgToString(irCall: IrCall, argument: IrExpression): IrExpression {
         return with(irCall) {
             if (argument.type.isNullable()) {
-                context.createIrBuilder(builder.scope.scopeOwnerSymbol).irBlock(irCall.startOffset, irCall.endOffset) {
-                    val argumentValue = createTempValIfNecessary(argument)
+                builder.irBlock {
+                    val (usage1, usage2) = makeTwoExpressionUsages(argument)
                     +irIfThenElse(
                             context.irBuiltIns.stringType,
-                            condition = buildEQEQ(argumentValue, IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)),
+                            condition = buildEQEQ(usage1, IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)),
                             thenPart = IrConstImpl.string(startOffset, endOffset, context.irBuiltIns.stringType, "null"),
-                            elsePart = buildNonNullableArgToString(irCall, argumentValue),
+                            elsePart = buildNonNullableArgToString(irCall, usage2),
                             origin = null
                     )
                 }
@@ -140,12 +133,12 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
     private fun buildNullableArgToNullableString(irCall: IrCall, argument: IrExpression): IrExpression {
         return with(irCall) {
             context.createIrBuilder(builder.scope.scopeOwnerSymbol).irBlock(irCall.startOffset, irCall.endOffset) {
-                val argumentValue = createTempValIfNecessary(argument)
+                val (usage1, usage2) = makeTwoExpressionUsages(argument)
                 +irIfThenElse(
                         context.irBuiltIns.stringType.makeNullable(),
-                        condition = buildEQEQ(argumentValue, IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)),
+                        condition = buildEQEQ(usage1, IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)),
                         thenPart = IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType),
-                        elsePart = buildNonNullableArgToString(irCall, argumentValue),
+                        elsePart = buildNonNullableArgToString(irCall, usage2),
                         origin = null
                 )
             }
@@ -172,10 +165,10 @@ internal class StringConcatenationTypeNarrowing(val context: Context) : FileLowe
      * Otherwise, it returns original trivial [expression]. This helps reduce excessive unnecessary local variable usage.
      * Inspired by lower/loops/utils/DeclarationIrBuilder.createTemporaryVariableIfNecessary
      */
-    private fun IrBlockBuilder.createTempValIfNecessary(expression: IrExpression): IrExpression =
-            if (expression.isTrivial())
-                expression
-            else
-                irGet(createTmpVariable(expression))
-
+    private fun IrBlockBuilder.makeTwoExpressionUsages(expression: IrExpression): Pair<IrExpression, IrExpression> {
+        if (expression.isTrivial())
+            return Pair(expression, expression.shallowCopy())
+        val tmpVal = createTmpVariable(expression)
+        return Pair(irGet(tmpVal.type, tmpVal.symbol), irGet(tmpVal.type, tmpVal.symbol))
+    }
 }
